@@ -1,0 +1,34 @@
+substitutions:
+  _COMMIT_SHA: "default_value" # Used if no value is provided during the build trigger
+
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/gcp-udemy-403002/demo-flask-app:${_COMMIT_SHA}', '.']
+
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/gcp-udemy-403002/demo-flask-app:${_COMMIT_SHA}']
+
+- name: 'gcr.io/gcp-udemy-403002/demo-flask-app:${_COMMIT_SHA}'
+  entrypoint: 'bash'
+  args:
+   - '-c'
+   - |
+      python -m pytest
+  
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  entrypoint: gcloud
+  args:
+   - 'run'
+   - 'deploy'
+   - 'py-bq-load'
+   - '--image'
+   - 'gcr.io/gcp-udemy-403002/demo-flask-app:${_COMMIT_SHA}'
+   - '--region'
+   - 'us-central1'
+   - '--allow-unauthenticated'
+
+images:
+- 'gcr.io/gcp-udemy-403002/demo-flask-app:${_COMMIT_SHA}'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
